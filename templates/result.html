@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultados — vigas_app</title>
+
+  <!-- Tema azul oscuro cristalino -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+
+  <!-- MathJax para renderizar \( ... \) -->
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(','\\)'], ['$', '$']] } };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <h1>Resultados — vigas_app</h1>
+  <p class="muted">
+    Longitud: <b>{{ "%.3f"|format(length)|replace('.', ',') }} {{ units["x"] }}</b>
+  </p>
+
+  <div class="card">
+    <h3>Apoyos</h3>
+    <table>
+      <thead><tr><th>Tipo</th><th>Posición x ({{ units["x"] }})</th></tr></thead>
+      <tbody>
+        {% for s in supports %}
+          <tr>
+            <td class="mono">{{ s.kind }}</td>
+            <td>{{ "%.3f"|format(s.position)|replace('.', ',') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reacciones</h3>
+    <div class="grid">
+      <div>
+        <h4 style="margin-top:0">Fuerzas ({{ units["V"] }})</h4>
+        <table>
+          <thead><tr><th>En x ({{ units["x"] }})</th><th>Valor</th></tr></thead>
+          <tbody>
+            {% for xR, R in reactions|dictsort %}
+              <tr>
+                <td>{{ "%.3f"|format(xR)|replace('.', ',') }}</td>
+                <td>{{ "%.4f"|format(R)|replace('.', ',') }}</td>
+              </tr>
+            {% endfor %}
+            {% if reactions|length == 0 %}
+              <tr><td colspan="2" class="muted">—</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="margin-top:0">Momentos de empotramiento ({{ units["M"] }})</h4>
+        <table>
+          <thead><tr><th>En x ({{ units["x"] }})</th><th>Valor</th></tr></thead>
+          <tbody>
+            {% for xM, Mfix in (fix_moment|default({}))|dictsort %}
+              <tr>
+                <td>{{ "%.3f"|format(xM)|replace('.', ',') }}</td>
+                <td>{{ "%.4f"|format(Mfix)|replace('.', ',') }}</td>
+              </tr>
+            {% endfor %}
+            {% if (fix_moment|default({}))|length == 0 %}
+              <tr><td colspan="2" class="muted">—</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Puntos críticos (resumen)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>x ({{ units["x"] }})</th>
+          <th>{{ units["w"] }}</th>
+          <th>{{ units["V"] }}</th>
+          <th>{{ units["M"] }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for (x,w,V,M) in points %}
+          <tr>
+            <td>{{ "%.3f"|format(x)|replace('.', ',') }}</td>
+            <td>{{ "%.3f"|format(w)|replace('.', ',') }}</td>
+            <td>{{ "%.3f"|format(V)|replace('.', ',') }}</td>
+            <td>{{ "%.3f"|format(M)|replace('.', ',') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:8px">
+      Convención: \(P&gt;0\), \(w&gt;0\) hacia arriba; momentos CCW positivos.
+    </p>
+  </div>
+
+  {% if extrema %}
+  <div class="card">
+    <h3>Extremos (máximos/mínimos)</h3>
+    <div class="grid">
+      <div>
+        <h4 style="margin-top:0">Cortante V ({{ units["V"] }})</h4>
+        <table>
+          <thead><tr><th>Tipo</th><th>x ({{ units["x"] }})</th><th>Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Máx. positivo</td><td>{{ "%.3f"|format(extrema["V"]["max_pos"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["V"]["max_pos"][1])|replace('.', ',') }}</td></tr>
+            <tr><td>Mín. (más negativo)</td><td>{{ "%.3f"|format(extrema["V"]["max_neg"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["V"]["max_neg"][1])|replace('.', ',') }}</td></tr>
+            <tr><td>Máx. absoluto</td><td>{{ "%.3f"|format(extrema["V"]["abs_max"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["V"]["abs_max"][1])|replace('.', ',') }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="margin-top:0">Momento M ({{ units["M"] }})</h4>
+        <table>
+          <thead><tr><th>Tipo</th><th>x ({{ units["x"] }})</th><th>Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Máx. positivo</td><td>{{ "%.3f"|format(extrema["M"]["max_pos"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["M"]["max_pos"][1])|replace('.', ',') }}</td></tr>
+            <tr><td>Mín. (más negativo)</td><td>{{ "%.3f"|format(extrema["M"]["max_neg"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["M"]["max_neg"][1])|replace('.', ',') }}</td></tr>
+            <tr><td>Máx. absoluto</td><td>{{ "%.3f"|format(extrema["M"]["abs_max"][0])|replace('.', ',') }}</td><td>{{ "%.3f"|format(extrema["M"]["abs_max"][1])|replace('.', ',') }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>Descargar LaTeX</h3>
+
+    <!-- Solo .tex -->
+    <form method="post" action="/download-tex">
+      <input type="hidden" name="length" value="{{ length_raw }}">
+      <input type="hidden" name="ux"     value="{{ units['x'] }}">
+      <input type="hidden" name="uw"     value="{{ units['w'] }}">
+      <input type="hidden" name="uV"     value="{{ units['V'] }}">
+      <input type="hidden" name="uM"     value="{{ units['M'] }}">
+      <input type="hidden" name="supports"         value='{{ supports_raw|e }}'>
+      <input type="hidden" name="point_loads"       value='{{ point_loads_raw|e }}'>
+      <input type="hidden" name="distributed_loads" value='{{ distributed_loads_raw|e }}'>
+      <input type="hidden" name="moments"           value='{{ moments_raw|e }}'>
+      <button class="btn" type="submit">Descargar .tex</button>
+    </form>
+
+    <!-- ZIP con figuras -->
+    <form method="post" action="/download-zip" style="margin-left:8px">
+      <input type="hidden" name="length" value="{{ length_raw }}">
+      <input type="hidden" name="ux"     value="{{ units['x'] }}">
+      <input type="hidden" name="uw"     value="{{ units['w'] }}">
+      <input type="hidden" name="uV"     value="{{ units['V'] }}">
+      <input type="hidden" name="uM"     value="{{ units['M'] }}">
+      <input type="hidden" name="supports"         value='{{ supports_raw|e }}'>
+      <input type="hidden" name="point_loads"       value='{{ point_loads_raw|e }}'>
+      <input type="hidden" name="distributed_loads" value='{{ distributed_loads_raw|e }}'>
+      <input type="hidden" name="moments"           value='{{ moments_raw|e }}'>
+      <button class="btn" type="submit">Descargar .zip (tex+figuras)</button>
+    </form>
+
+    <p class="muted" style="margin-top:10px">
+      El archivo <span class="mono">.tex</span> referencia las figuras generadas (sin TikZ). El ZIP incluye todo listo para compilar.
+    </p>
+  </div>
+
+  <p><a href="/">← Volver</a></p>
+<body class="theme-copper">
+
+</html>

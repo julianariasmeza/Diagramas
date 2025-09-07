@@ -1,0 +1,151 @@
+/* ====== Dark Navy + Metallic Typography (Gold/Copper) ====== */
+
+/* Oro por defecto */
+:root{
+  /* Fondo */
+  --bg-1:#0b1220;
+  --bg-2:#0f1b2d;
+  --panel:rgba(21,32,55,.55);
+
+  /* Tipografía metálica (oro) */
+  --text-1:#e8c26c;   /* principal */
+  --text-2:#caa65a;   /* atenuado */
+  --text-muted:#b8954a;
+
+  /* Degradado de headings (oro) */
+  --head-a:#ffe6a7; 
+  --head-b:#f2c265; 
+  --head-c:#d4af37;
+
+  /* Accento y bordes */
+  --accent:#67a8ff;
+  --accent-strong:#1f6edc;
+  --border:rgba(212,175,55,.28); /* dorado suave */
+}
+
+/* Cambiá a cobre aplicando <body class="theme-copper"> */
+.theme-copper{
+  --text-1:#d6a176;     /* cobre claro */
+  --text-2:#c3865b;
+  --text-muted:#b6784f;
+
+  --head-a:#ffd8b1;
+  --head-b:#e6a775;
+  --head-c:#b87333;     /* cobre */
+
+  --border:rgba(214,161,118,.30);
+}
+
+/* ====== Base ====== */
+*{box-sizing:border-box}
+html,body{height:100%}
+
+body{
+  margin:0; padding:24px; line-height:1.45;
+  color:var(--text-1);
+  background:
+    radial-gradient(1200px 600px at 5% 0%,rgba(212,175,55,.06),transparent 55%),
+    radial-gradient(1000px 500px at 95% 100%,rgba(184,115,51,.06),transparent 55%),
+    url("../img/industrial-bg.webp") center/cover fixed no-repeat,
+    linear-gradient(180deg,var(--bg-1),var(--bg-2));
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+}
+
+/* Cartas / paneles */
+.form-section,.card{
+  background:linear-gradient(180deg,rgba(17,25,44,.85),rgba(14,22,39,.8));
+  backdrop-filter:blur(6px);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+  padding:20px; margin:16px 0;
+}
+
+/* Títulos con efecto metálico */
+h1,h2,h3,.section-title{
+  margin:0 0 12px 0; font-weight:700; letter-spacing:.3px;
+  background:linear-gradient(90deg,var(--head-a),var(--head-b),var(--head-c));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 .5px rgba(0,0,0,.4);
+}
+
+/* Tipografía general */
+p,small,code,.muted{color:var(--text-2)}
+.mono{font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace}
+
+/* Layouts */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.units{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}
+@media (max-width:900px){.units{grid-template-columns:1fr 1fr}}
+.row{margin:15px 0}
+
+/* Etiquetas */
+label{font-size:13px;font-weight:600;color:var(--text-1);display:block;margin-bottom:6px}
+
+/* Inputs y textareas */
+textarea,input,select{
+  width:100%; max-width:480px;
+  color:var(--text-1);
+  background:rgba(12,18,34,.55);
+  border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px;
+  outline:none; transition:border-color .2s, box-shadow .2s;
+}
+textarea:focus,input:focus,select:focus{
+  border-color:var(--head-b);
+  box-shadow:0 0 0 3px rgba(212,175,55,.18);
+}
+textarea.json-input{
+  background:#111827; color:#f5e6c0; border-color:rgba(212,175,55,.25);
+}
+textarea::placeholder,input::placeholder{color:rgba(232,194,108,.55)}
+
+/* Botones */
+button{cursor:pointer;transition:transform .18s ease, box-shadow .18s ease;margin-right:8px}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+.btn{
+  display:inline-block;padding:12px 16px;border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,215,130,.06);
+  color:var(--text-1); font-weight:600; text-decoration:none;
+}
+.btn:hover{background:rgba(255,215,130,.12); box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.btn-primary{
+  background:linear-gradient(180deg,#2b83f6,#1e62d0);
+  border:1px solid #2563eb; color:#fff;
+  border-radius:10px; padding:12px 16px; font-weight:600;
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(31,110,220,.35)}
+
+.loading{display:none}.loading.show{display:inline-block}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top:2px solid #fff;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Mensajes */
+.hint{
+  background:linear-gradient(180deg,rgba(16,35,60,.6),rgba(13,28,49,.55));
+  border:1px solid var(--border); border-left:4px solid var(--head-b);
+  border-radius:10px; padding:12px; margin:12px 0;
+  color:var(--text-2);
+}
+.error{
+  background:linear-gradient(180deg,rgba(90,17,17,.55),rgba(60,12,12,.55));
+  border:1px solid rgba(239,68,68,.45); border-left:4px solid #ef4444;
+  border-radius:10px; padding:12px; color:#ffb4b4;
+}
+.success{
+  background:linear-gradient(180deg,rgba(14,53,32,.55),rgba(11,40,25,.55));
+  border:1px solid rgba(34,197,94,.35); border-left:4px solid #22c55e;
+  border-radius:10px; padding:12px; color:#c9f5d4;
+}
+
+/* Tablas */
+table{width:100%;border-collapse:collapse;color:var(--text-1)}
+th,td{border:1px solid rgba(255,215,130,.18);padding:8px;text-align:center}
+th{background:rgba(212,175,55,.08);color:var(--text-1)}
+
+/* Links */
+a{color:var(--head-b);text-decoration:none}
+a:hover{color:var(--head-c)}

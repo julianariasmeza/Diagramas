@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diagramas de V y M </title>
+
+  <!-- Tema azul oscuro cristalino -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+
+  <!-- MathJax para fórmulas en línea \( ... \) -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)'], ['$', '$']] },
+      startup: {
+        ready: function () {
+          MathJax.startup.defaultReady();
+          console.log('MathJax cargado correctamente');
+        }
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body class="theme-copper">
+
+
+<div class="form-section">
+  <h2>Análisis de Vigas y Creación de Diagramas de Cortante y Momento</h2>
+  <p>Herramienta para el análisis estructural de vigas  con descarga automática de reportes en LaTeX.</p>
+  <p>Desarrollado por Julián Arias Meza.</p>
+</div>
+
+<form id="beam-form" method="post">
+
+  <div class="form-section">
+    <h3 class="section-title">Geometría y Unidades</h3>
+
+    <div class="row">
+      <label>Longitud L de la viga:</label>
+      <input name="length" value="6,0" size="8" inputmode="decimal" required>
+      <small>(usá coma decimal, ej: 6,0)</small>
+    </div>
+
+    <div class="row">
+      <div class="units">
+        <div>
+          <label>Unidad de longitud (x)</label>
+          <input name="ux" value="m" placeholder="m, cm, mm, in, ft">
+        </div>
+        <div>
+          <label>Unidad de carga distrib. (w)</label>
+          <input name="uw" value="kN/m" placeholder="kN/m, N/m, lb/ft">
+        </div>
+        <div>
+          <label>Unidad de cortante (V)</label>
+          <input name="uV" value="kN" placeholder="kN, N, lb">
+        </div>
+        <div>
+          <label>Unidad de momento (M)</label>
+          <input name="uM" value="kN.m" placeholder="kN.m, N.m, lb.ft">
+        </div>
+      </div>
+      <small>El motor acepta cualquier texto de unidad; en el PDF se imprime con <code>siunitx</code>.</small>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="section-title">Condiciones de Apoyo</h3>
+    <div class="hint">
+      <b>Apoyos</b> (formato JSON) — Tipos válidos: <code>"pinned"</code> (articulado), <code>"roller"</code> (rodillo), <code>"fixed"</code> (empotrado)<br>
+      <small>Ejemplos: viga simplemente apoyada (articulado en 0 y rodillo en L) o voladizo (empotrado en 0).</small>
+      <button type="button" class="example-btn" onclick="setExample('supports', 'simple')">Simplemente apoyada</button>
+      <button type="button" class="example-btn" onclick="setExample('supports', 'cantilever')">Voladizo</button>
+    </div>
+    <textarea name="supports" rows="4" cols="70" class="json-input">[
+ {"x":"0,0","type":"pinned"},
+ {"x":"6,0","type":"roller"}
+]</textarea>
+  </div>
+
+  <div class="form-section">
+    <h3 class="section-title">Sistema de Cargas</h3>
+
+    <div class="grid">
+      <div>
+        <p><b>Cargas puntuales</b> (formato JSON):</p>
+        <div class="hint">
+          Posición <code>x</code> y magnitud <code>P</code>. Valores positivos hacia arriba.
+          <button type="button" class="example-btn" onclick="setExample('point_loads', 'default')">Ejemplo</button>
+        </div>
+        <textarea name="point_loads" rows="6" cols="70" class="json-input">[
+ {"x":"2,0","P":"-12,0"},
+ {"x":"4,0","P":"8,0"}
+]</textarea>
+      </div>
+
+      <div>
+        <p><b>Cargas distribuidas lineales</b> (formato JSON):</p>
+        <div class="hint">
+          Desde <code>xa</code> hasta <code>xb</code> con intensidades <code>wa</code> y <code>wb</code>.
+          <button type="button" class="example-btn" onclick="setExample('distributed_loads', 'default')">Ejemplo</button>
+        </div>
+        <textarea name="distributed_loads" rows="6" cols="70" class="json-input">[
+ {"xa":"0,0","xb":"3,0","wa":"0,0","wb":"-4,0"},
+ {"xa":"3,0","xb":"6,0","wa":"-4,0","wb":"0,0"}
+]</textarea>
+      </div>
+    </div>
+
+    <p><b>Momentos aplicados</b> (formato JSON, convención CCW+):</p>
+    <div class="hint">
+      Posición <code>x</code> y magnitud <code>M</code>. Positivo = contrahorario (CCW).
+      <button type="button" class="example-btn" onclick="setExample('moments', 'default')">Ejemplo</button>
+    </div>
+    <textarea name="moments" rows="3" cols="70" class="json-input">[
+ {"x":"5,0","M":"3,0"}
+]</textarea>
+  </div>
+
+  <div class="form-section">
+    <h3 class="section-title">Análisis y Descarga</h3>
+
+    <div class="row">
+      <!-- CAMBIO: botón que NO navega. Valida y consulta /analyze?as=json -->
+      <button type="button" id="btn-validar" class="btn-primary">
+        <span class="loading"><span class="spinner"></span>Analizando...</span>
+        <span class="normal">🔍 Ver resultados</span>
+      </button>
+
+      <button type="submit" formaction="/download-tex" class="btn">📄 Descargar .tex</button>
+      <button type="submit" formaction="/download-zip" class="btn">📦 Descargar .zip (tex+figuras)</button>
+    </div>
+
+    <!-- Leyenda persistente de estado -->
+    <div id="status" class="success" style="display:none;"></div>
+
+    <div class="hint">
+      <b>Convención de signos:</b> \(P > 0\) y \(w > 0\) hacia <b>arriba</b>.
+      Si tu carga es hacia abajo, ingresala negativa (ej: \(w = -4,0~\text{kN/m}\)).
+      Los momentos son CCW positivos (colocá \(M < 0\) si es horario).
+    </div>
+
+    <div id="error-message" class="error" style="display:none;"></div>
+    <div id="success-message" class="success" style="display:none;"></div>
+  </div>
+
+</form>
+
+<script>
+// =========================
+// Ejemplos predefinidos
+// =========================
+const examples = {
+  supports: {
+    simple: '[{"x":"0,0","type":"pinned"},{"x":"6,0","type":"roller"}]',
+    cantilever: '[{"x":"0,0","type":"fixed"}]'
+  },
+  point_loads: {
+    default: '[{"x":"2,0","P":"-10,0"},{"x":"4,0","P":"5,0"}]'
+  },
+  distributed_loads: {
+    default: '[{"xa":"1,0","xb":"5,0","wa":"-2,0","wb":"-6,0"}]'
+  },
+  moments: {
+    default: '[{"x":"3,0","M":"8,0"}]'
+  }
+};
+
+function setExample(field, type) {
+  const textarea = document.querySelector(`textarea[name="${field}"]`);
+  if (textarea && examples[field] && examples[field][type]) {
+    textarea.value = examples[field][type];
+    showSuccess(`Ejemplo cargado en ${field}`);
+  }
+}
+
+// =========================
+// Helpers UI
+// =========================
+function showError(message) {
+  const errorDiv = document.getElementById('error-message');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  setTimeout(() => errorDiv.style.display = 'none', 6000);
+}
+
+function showSuccess(message) {
+  const successDiv = document.getElementById('success-message');
+  successDiv.textContent = message;
+  successDiv.style.display = 'block';
+  setTimeout(() => successDiv.style.display = 'none', 3000);
+}
+
+function setStatus(ok, message) {
+  const box = document.getElementById('status');
+  box.className = ok ? 'success' : 'error';
+  box.textContent = message;
+  box.style.display = 'block';
+}
+
+// =========================
+// Validación local
+// =========================
+function validateJSON(jsonString, fieldName) {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!Array.isArray(parsed)) throw new Error(`${fieldName} debe ser un array`);
+    return parsed;
+  } catch (err) {
+    throw new Error(`Error en ${fieldName}: ${err.message}`);
+  }
+}
+
+function validateBeamData(formData) {
+  const length = formData.get('length');
+  if (!length || isNaN(parseFloat(length.replace(',', '.')))) {
+    throw new Error('La longitud debe ser un número válido');
+  }
+  const lengthVal = parseFloat(length.replace(',', '.'));
+  if (lengthVal <= 0) throw new Error('La longitud debe ser positiva');
+
+  for (const field of ['supports', 'point_loads', 'distributed_loads', 'moments']) {
+    const value = formData.get(field) || '[]';
+    validateJSON(value, field);
+  }
+  return true;
+}
+
+// =========================
+const form = document.getElementById('beam-form');
+
+// Validación genérica para envíos (descargas)
+form.addEventListener('submit', (e) => {
+  try {
+    const button = e.submitter;
+    const loading = button.querySelector('.loading');
+    const normal = button.querySelector('.normal');
+    if (loading && normal) { loading.classList.add('show'); normal.style.display = 'none'; button.disabled = true; }
+
+    const formData = new FormData(form);
+    validateBeamData(formData);
+    showSuccess('Datos validados correctamente');
+  } catch (err) {
+    e.preventDefault();
+    showError(err.message);
+    const button = e.submitter;
+    const loading = button.querySelector('.loading');
+    const normal = button.querySelector('.normal');
+    if (loading && normal) { loading.classList.remove('show'); normal.style.display = 'inline'; button.disabled = false; }
+  }
+});
+
+// =========================
+// Analizar SIN navegar
+// =========================
+const btnValidar = document.getElementById('btn-validar');
+
+function contentIsJSON(res) {
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  return ct.includes('application/json');
+}
+
+btnValidar.addEventListener('click', async () => {
+  const loading = btnValidar.querySelector('.loading');
+  const normal  = btnValidar.querySelector('.normal');
+
+  try {
+    const fd = new FormData(form);
+    validateBeamData(fd);
+
+    if (loading && normal) { loading.classList.add('show'); normal.style.display = 'none'; btnValidar.disabled = true; }
+
+    const res = await fetch('/analyze?as=json', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    });
+
+    // Si el servidor devolvió error HTTP, mostramos detalle
+    if (!res.ok) {
+      let detalle = '';
+      try {
+        if (contentIsJSON(res)) {
+          const j = await res.json();
+          detalle = j.error ? ` · ${j.error}` : '';
+        } else {
+          const t = await res.text();
+          detalle = ' · ' + t.slice(0, 200);
+        }
+      } catch { /* ignorar */ }
+      throw new Error(`HTTP ${res.status} ${res.statusText}${detalle}`);
+    }
+
+    // Debe ser JSON; si no lo es, mostramos un extracto de lo recibido
+    if (!contentIsJSON(res)) {
+      const txt = await res.text();
+      throw new Error('Respuesta inválida del servidor (no es JSON). Extracto: ' + txt.slice(0, 200));
+    }
+
+    const data = await res.json();
+    if (data && data.ok) {
+      setStatus(true, '✅ Resultados aceptados');
+    } else {
+      throw new Error(data && data.error ? data.error : 'Análisis rechazado por el servidor');
+    }
+
+  } catch (err) {
+    setStatus(false, '❌ ' + (err?.message || String(err)));
+  } finally {
+    if (loading && normal) { loading.classList.remove('show'); normal.style.display = 'inline'; btnValidar.disabled = false; }
+  }
+});
+
+// Restaurar botones al volver
+window.addEventListener('pageshow', () => {
+  document.querySelectorAll('button').forEach(btn => {
+    btn.disabled = false;
+    const loading = btn.querySelector('.loading');
+    const normal = btn.querySelector('.normal');
+    if (loading && normal) { loading.classList.remove('show'); normal.style.display = 'inline'; }
+  });
+});
+
+// Formateo automático de JSON al perder el foco
+document.querySelectorAll('.json-input').forEach(textarea => {
+  textarea.addEventListener('blur', function() {
+    try {
+      const parsed = JSON.parse(this.value);
+      this.value = JSON.stringify(parsed, null, 2);
+    } catch { /* ignorar */ }
+  });
+});
+
+console.log('Interfaz cargada correctamente');
+</script>
+</body>
+</html>
