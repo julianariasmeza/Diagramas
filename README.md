@@ -1,17 +1,7 @@
 
-# vigas_app (Web local con Flask) — versión corregida
+# Vigas_app 
 
-Aplicación web local para ingresar datos de una viga, calcular reacciones y generar diagramas y un **PDF** con el informe.
-
-## Requisitos
-- Python 3.9+ recomendado (funciona con 3.7+ si tenés Anaconda)
-- `pip install -r requirements.txt`
-
-## Ejecutar
-```bash
-python app.py
-```
-Abrí `http://127.0.0.1:5000` en el navegador.
+Aplicación web local para ingresar datos de una viga, calcular reacciones y generar diagramas y un PDF con el informe.
 
 ## Notas
 - El formulario admite **coma o punto** decimal; internamente se normaliza a punto.
